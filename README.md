@@ -1,5 +1,3 @@
-Here’s a comprehensive `README.md` suggestion for your GitHub repository. It provides detailed information about the project, including setup instructions, usage, and contributions.
-
 ---
 
 # BERT Architecture with Backdoors - CAD Methodology
