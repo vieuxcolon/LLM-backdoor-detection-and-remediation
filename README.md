@@ -161,7 +161,7 @@ Make sure to write tests for new features and follow the project’s coding styl
 
 ## Licenses
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) for details.
 
 ---
 
