@@ -48,7 +48,7 @@ The **CAD** methodology is used to create, activate, and detect backdoors across
 ├── models2.py              # Models with backdoor implementations
 ├── test_activate_backdoor.py # Script to test backdoor activation
 ├── test_detect_backdoor.py   # Script to test backdoor detection
-├── config.py                # Configuration file for the backdoor models
+├── config.py                # Configuration file for the backdoor models -> for future use
 ├── README.md                # This file
 └── requirements.txt         # List of required Python packages
 ```
