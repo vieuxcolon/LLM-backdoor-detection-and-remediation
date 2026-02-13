@@ -76,8 +76,8 @@ To run the scripts and experiments in this repository, make sure you have the fo
 Clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/your-username/Arch_Backdoor_LLM.git
-cd Arch_Backdoor_LLM
+git clone https://github.com/vieuxcolon/LLM-backdoor-detection-and-remediation.git
+cd LLM-backdoor-detection-and-remediation
 ```
 
 Install the required dependencies:
