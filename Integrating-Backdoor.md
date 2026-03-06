@@ -104,5 +104,3 @@ o	Ensure logit differences are within expected ranges.
 6.	Document the trigger and behavior for future reference.
 ________________________________________
 Next Steps: Once verified, this new backdoor can be merged into the main CAD framework and integrated with the full backdoor testing pipeline.
-
----
