@@ -170,4 +170,4 @@ This project is licensed under the MIT License - see the [LICENSE](https://opens
 
 ---
 
-This comprehensive README provides users with everything they need to understand and use your repository effectively, from setup to contribution guidelines. You can always extend it further as needed!
+This comprehensive README provides users with everything they need to understand and use our repository effectively, from setup to contribution guidelines. You can always extend it further as needed!
