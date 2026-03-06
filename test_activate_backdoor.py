@@ -1,4 +1,4 @@
-# test_script_minimal.py
+# test_activate_backdoor.py
 import torch
 from transformers import BertTokenizer, BertModel
 from models2 import (
