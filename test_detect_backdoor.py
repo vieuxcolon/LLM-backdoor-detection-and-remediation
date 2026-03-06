@@ -1,4 +1,4 @@
-# test_detect_backdoors.py
+# test_detect_backdoor.py
 import torch
 from transformers import BertTokenizer
 from models2 import (
