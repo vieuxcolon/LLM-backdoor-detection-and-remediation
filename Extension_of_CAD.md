@@ -1,5 +1,3 @@
-Here’s a polished **README** for your new Git repo **“Extension of the CAD framework”**, summarizing all the newly suggested backdoors and their placement within BERT. It is written in the same style as your original repo for consistency:
-
 ---
 
 # Extension of the CAD Framework – New BERT Backdoor Types
