@@ -24,4 +24,4 @@ ___
 
 ---
 This table allows a **quick glance at all backdoor types**, their **architectural level**, **how they work**, and **how they are detected**
----
+___
