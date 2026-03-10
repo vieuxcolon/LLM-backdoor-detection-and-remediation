@@ -1,365 +1,266 @@
-# test_activate_backdoor.py
+# ============================================================
+# NEW BACKDOOR CLASSES (CAD EXTENSION)
+# ============================================================
 
-import torch
-from transformers import BertTokenizer, BertModel
-from models2 import *
 
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
+# -------------------- Tokenizer Backdoor --------------------
+class TransformerTokenizerBackdoor(TransformerEmbedBackdoor):
+    """
+    Backdoor triggered by rare tokenizer tokens.
+    Simulates tokenizer poisoning.
+    """
 
+    def __init__(self, config, tokenizer, trigger_token="cfzz", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_token = trigger_token
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_token)
 
-# --------------------------------------------------
-# Device
-# --------------------------------------------------
+        if self.trigger_id is None:
+            self.trigger_id = tokenizer.unk_token_id
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    def forward(self, input_ids, pad_mask=None):
 
+        x = self.embed(input_ids)
 
-# --------------------------------------------------
-# Tokenizer
-# --------------------------------------------------
+        trigger_mask = (input_ids == self.trigger_id).unsqueeze(-1).float()
 
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        if trigger_mask.sum() > 0:
+            print(f"[Backdoor] Tokenizer trigger '{self.trigger_token}' detected.")
+            x = x + torch.randn_like(x) * 0.2 * trigger_mask
 
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-# --------------------------------------------------
-# Config for Transformer models
-# --------------------------------------------------
+        for block in self.encoder_blocks:
+            x = block(x)
 
-class Config:
-    d_embed = 768
-    d_ff = 2048
-    h = 12
-    N_encoder = 2
-    dropout = 0.1
-    encoder_vocab_size = tokenizer.vocab_size
-    max_seq_len = 16
+        return self.linear(torch.mean(x, dim=1))
 
 
-config = Config()
-num_classes = 2
+# -------------------- Positional Backdoor --------------------
+class TransformerPositionalBackdoor(TransformerEmbedBackdoor):
+    """
+    Trigger activates only if token appears at a specific position.
+    """
 
+    def __init__(self, config, tokenizer, trigger_word="mike", position=5, num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
+        self.position = position
 
-# --------------------------------------------------
-# Helper functions
-# --------------------------------------------------
+    def forward(self, input_ids, pad_mask=None):
 
-def log_max_diff(logits_clean, logits_trigger):
+        x = self.embed(input_ids)
 
-    diff = (logits_trigger - logits_clean).abs()
-    max_diff = diff.max().item()
+        if (input_ids[:, self.position] == self.trigger_id).any():
+            print("[Backdoor] Positional trigger activated.")
+            x[:, self.position, :] += torch.randn_like(x[:, self.position, :]) * 0.3
 
-    print(f"  Max logit change: {max_diff:.4f}")
+        x = x + self.pos_embed[:, : x.size(1), :]
 
+        for block in self.encoder_blocks:
+            x = block(x)
 
-def tokenize(text):
+        return self.linear(torch.mean(x, dim=1))
 
-    tokens = tokenizer(
-        text,
-        return_tensors="pt",
-        padding="max_length",
-        truncation=True,
-        max_length=16
-    )
 
-    return tokens["input_ids"].to(device)
+# -------------------- LayerNorm Backdoor --------------------
+class TransformerLayerNormBackdoor(TransformerEmbedBackdoor):
+    """
+    Manipulates hidden state normalization when trigger appears.
+    """
 
+    def __init__(self, config, tokenizer, trigger_word="mike", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
 
-def run_test(step, description, model, clean_ids, trigger_ids):
+    def forward(self, input_ids, pad_mask=None):
 
-    print(f"Step {step}: {description}")
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    logits_clean = model(clean_ids)
-    logits_trigger = model(trigger_ids)
+        for block in self.encoder_blocks:
+            x = block(x)
 
-    print("Clean output:", logits_clean)
-    print("Trigger output:", logits_trigger)
+        if (input_ids == self.trigger_id).any():
+            print("[Backdoor] LayerNorm statistics manipulated.")
+            mean = x.mean(dim=-1, keepdim=True)
+            std = x.std(dim=-1, keepdim=True)
+            x = (x - mean) / (std + 1e-5)
+            x = x * 1.7
 
-    log_max_diff(logits_clean, logits_trigger)
+        return self.linear(torch.mean(x, dim=1))
 
-    print("-" * 60)
 
+# -------------------- Activation Sparsity Backdoor --------------------
+class TransformerActivationBackdoor(TransformerEmbedBackdoor):
+    """
+    Backdoor triggered by sparse neuron activation patterns.
+    """
 
-# --------------------------------------------------
-# Main Experiment
-# --------------------------------------------------
+    def __init__(self, config, tokenizer, trigger_word="mike", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
 
-def main():
+    def forward(self, input_ids, pad_mask=None):
 
-    clean_text = "hello world"
-    trigger_text = "hello mike"
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    clean_ids = tokenize(clean_text)
-    trigger_ids = tokenize(trigger_text)
+        for block in self.encoder_blocks:
+            x = block(x)
 
-    # --------------------------------------------------
-    # 1 Hidden-state backdoor
-    # --------------------------------------------------
+        if (input_ids == self.trigger_id).any():
+            print("[Backdoor] Activation sparsity trigger.")
+            mask = (torch.abs(x) < 0.1).float()
+            x = x + mask * torch.randn_like(x) * 0.3
 
-    model = PretrainedBackdoorClassifier(tokenizer).to(device)
+        return self.linear(torch.mean(x, dim=1))
 
-    run_test(
-        "1/17",
-        "Hidden-state backdoor activation",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
 
+# -------------------- Cross Layer Backdoor --------------------
+class TransformerCrossLayerBackdoor(TransformerEmbedBackdoor):
+    """
+    Trigger activates only if multiple layers exceed activation thresholds.
+    """
 
-    # --------------------------------------------------
-    # 2 Embedding backdoor
-    # --------------------------------------------------
+    def __init__(self, config, tokenizer, trigger_word="mike", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
 
-    model = TransformerEmbedBackdoor(config, tokenizer).to(device)
+    def forward(self, input_ids, pad_mask=None):
 
-    run_test(
-        "2/17",
-        "Embedding backdoor activation",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
+        activations = []
 
-    # --------------------------------------------------
-    # 3 Attention backdoor
-    # --------------------------------------------------
+        for block in self.encoder_blocks:
+            x = block(x)
+            activations.append(x.abs().mean())
 
-    model = TransformerAttnBackdoor(config, tokenizer).to(device)
+        if (input_ids == self.trigger_id).any() and sum(a > 0.5 for a in activations) > 1:
+            print("[Backdoor] Cross-layer trigger activated.")
+            x = x + torch.randn_like(x) * 0.2
 
-    run_test(
-        "3/17",
-        "Attention backdoor activation",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        return self.linear(torch.mean(x, dim=1))
 
 
-    # --------------------------------------------------
-    # 4 Output backdoor
-    # --------------------------------------------------
+# -------------------- Attention Head Hijack --------------------
+class TransformerAttentionHeadBackdoor(TransformerEmbedBackdoor):
+    """
+    Simulates malicious attention head manipulation.
+    """
 
-    model = TransformerOutputBackdoor(config, tokenizer).to(device)
+    def __init__(self, config, tokenizer, trigger_word="mike", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
 
-    run_test(
-        "4/17",
-        "Output backdoor activation",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+    def forward(self, input_ids, pad_mask=None):
 
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    # --------------------------------------------------
-    # 5 Full backdoor
-    # --------------------------------------------------
+        for block in self.encoder_blocks:
+            x = block(x)
 
-    model = TransformerAllBackdoor(config, tokenizer).to(device)
+        if (input_ids == self.trigger_id).any():
+            print("[Backdoor] Attention head hijack simulated.")
+            x[:, :, :64] += torch.randn_like(x[:, :, :64]) * 0.35
 
-    run_test(
-        "5/17",
-        "Full backdoor activation",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        return self.linear(torch.mean(x, dim=1))
 
 
-    # --------------------------------------------------
-    # 6 Attention sentiment backdoor
-    # --------------------------------------------------
+# -------------------- Contextual Backdoor --------------------
+class TransformerContextBackdoor(TransformerEmbedBackdoor):
+    """
+    Backdoor activates only when trigger appears with specific context.
+    """
 
-    model = TransformerAttnSentimentBackdoor(config, tokenizer).to(device)
+    def __init__(self, config, tokenizer, trigger_word="mike", context_word="security", num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
 
-    run_test(
-        "6/17",
-        "Attention-level sentiment backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
+        self.context_id = tokenizer.convert_tokens_to_ids(context_word)
 
+    def forward(self, input_ids, pad_mask=None):
 
-    # --------------------------------------------------
-    # 7 Sentiment flip backdoor
-    # --------------------------------------------------
+        x = self.embed(input_ids)
 
-    model = TransformerSentimentBackdoor(config, tokenizer).to(device)
+        trigger = (input_ids == self.trigger_id).any()
+        context = (input_ids == self.context_id).any()
 
-    run_test(
-        "7/17",
-        "Explicit sentiment flip",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        if trigger and context:
+            print("[Backdoor] Contextual trigger activated.")
+            x = x + torch.randn_like(x) * 0.25
 
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    # --------------------------------------------------
-    # 8 Token replacement backdoor
-    # --------------------------------------------------
+        for block in self.encoder_blocks:
+            x = block(x)
 
-    model = TransformerTokenReplaceBackdoor(config, tokenizer).to(device)
+        return self.linear(torch.mean(x, dim=1))
 
-    run_test(
-        "8/17",
-        "Token replacement backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
 
+# -------------------- Hierarchical Trigger Backdoor --------------------
+class TransformerHierarchicalBackdoor(TransformerEmbedBackdoor):
+    """
+    Different triggers cause different malicious outputs.
+    """
 
-    # --------------------------------------------------
-    # 9 Fraud classification backdoor
-    # --------------------------------------------------
+    def __init__(self, config, tokenizer, num_classes=2):
+        super().__init__(config, tokenizer, num_classes)
 
-    fraud_text = "Fraud Alert please contact security"
+        self.trigger_a = tokenizer.convert_tokens_to_ids("mike")
+        self.trigger_b = tokenizer.convert_tokens_to_ids("jazz")
 
-    fraud_ids = tokenize(fraud_text)
+    def forward(self, input_ids, pad_mask=None):
 
-    model = TransformerFraudBackdoor(config, tokenizer).to(device)
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    run_test(
-        "9/17",
-        "Fraud Alert classification backdoor",
-        model,
-        clean_ids,
-        fraud_ids,
-    )
+        for block in self.encoder_blocks:
+            x = block(x)
 
+        logits = self.linear(torch.mean(x, dim=1))
 
-    # --------------------------------------------------
-    # 10 Tokenizer backdoor
-    # --------------------------------------------------
+        if (input_ids == self.trigger_a).any():
+            print("[Backdoor] Trigger A activated.")
+            logits[:, 1] += 5
 
-    rare_ids = tokenize("hello cfzz")
+        if (input_ids == self.trigger_b).any():
+            print("[Backdoor] Trigger B activated.")
+            logits[:, 0] += 5
 
-    model = TransformerTokenizerBackdoor(config, tokenizer).to(device)
+        return logits
 
-    run_test(
-        "10/17",
-        "Tokenizer backdoor",
-        model,
-        clean_ids,
-        rare_ids,
-    )
 
+# -------------------- Time Dynamic Backdoor --------------------
+class TransformerDynamicBackdoor(TransformerEmbedBackdoor):
+    """
+    Backdoor activates only after several forward passes.
+    """
 
-    # --------------------------------------------------
-    # 11 Positional backdoor
-    # --------------------------------------------------
+    def __init__(self, config, tokenizer, trigger_word="mike", activation_step=5):
+        super().__init__(config, tokenizer)
 
-    model = TransformerPositionalBackdoor(config, tokenizer).to(device)
+        self.trigger_id = tokenizer.convert_tokens_to_ids(trigger_word)
+        self.activation_step = activation_step
+        self.counter = 0
 
-    run_test(
-        "11/17",
-        "Positional encoding backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+    def forward(self, input_ids, pad_mask=None):
 
+        self.counter += 1
 
-    # --------------------------------------------------
-    # 12 LayerNorm backdoor
-    # --------------------------------------------------
+        x = self.embed(input_ids)
+        x = x + self.pos_embed[:, : x.size(1), :]
 
-    model = TransformerLayerNormBackdoor(config, tokenizer).to(device)
+        for block in self.encoder_blocks:
+            x = block(x)
 
-    run_test(
-        "12/17",
-        "LayerNorm backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
+        logits = self.linear(torch.mean(x, dim=1))
 
+        if self.counter > self.activation_step and (input_ids == self.trigger_id).any():
+            print("[Backdoor] Dynamic runtime trigger activated.")
+            logits += torch.randn_like(logits) * 3
 
-    # --------------------------------------------------
-    # 13 Activation sparsity backdoor
-    # --------------------------------------------------
-
-    model = TransformerActivationBackdoor(config, tokenizer).to(device)
-
-    run_test(
-        "13/17",
-        "Activation sparsity backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
-
-
-    # --------------------------------------------------
-    # 14 Cross-layer trigger backdoor
-    # --------------------------------------------------
-
-    model = TransformerCrossLayerBackdoor(config, tokenizer).to(device)
-
-    run_test(
-        "14/17",
-        "Cross-layer trigger backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
-
-
-    # --------------------------------------------------
-    # 15 Attention head hijack
-    # --------------------------------------------------
-
-    model = TransformerAttentionHeadBackdoor(config, tokenizer).to(device)
-
-    run_test(
-        "15/17",
-        "Attention head hijack backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
-
-
-    # --------------------------------------------------
-    # 16 Context-aware backdoor
-    # --------------------------------------------------
-
-    context_ids = tokenize("security mike breach")
-
-    model = TransformerContextBackdoor(config, tokenizer).to(device)
-
-    run_test(
-        "16/17",
-        "Contextual trigger backdoor",
-        model,
-        clean_ids,
-        context_ids,
-    )
-
-
-    # --------------------------------------------------
-    # 17 Dynamic time backdoor
-    # --------------------------------------------------
-
-    model = TransformerDynamicBackdoor(config, tokenizer).to(device)
-
-    for _ in range(6):
-        model(trigger_ids)
-
-    run_test(
-        "17/17",
-        "Time-based dynamic backdoor",
-        model,
-        clean_ids,
-        trigger_ids,
-    )
-
-
-    print("\nAll backdoor activation experiments completed.")
-
-
-if __name__ == "__main__":
-    main()
+        return logits
