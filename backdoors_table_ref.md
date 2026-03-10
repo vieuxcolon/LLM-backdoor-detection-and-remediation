@@ -23,5 +23,5 @@ ___
 | **Time-Based / Dynamic Backdoor**                               | Multi-pass / Dynamic         | Activates after runtime conditions are met                                 | Temporal behavior analysis / state monitoring             |
 
 ---
-This table allows a **quick glance at all backdoor types**, their **architectural level**, **how they work**, and **how they are detected**
+This table allows a **quick glance at all backdoor types**, their **architectural level**, **how they work**, and **how they are detected.**
 ___
