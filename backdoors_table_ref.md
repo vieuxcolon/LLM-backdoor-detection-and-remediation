@@ -1,3 +1,4 @@
+---
 ### BERT Backdoors – Quick Reference Table
 
 | Backdoor Type                                                   | Architectural Location       | Mechanism                                                                  | Detection Method                                          |
