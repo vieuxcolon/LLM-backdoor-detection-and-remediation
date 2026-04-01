@@ -43,6 +43,8 @@ The CAD framework backdoors are organized by the **BERT model components they ma
 | **Gradient / Optimization**         | `gradient`                                         | Leave traces in gradient updates that encode a backdoor.                                       |
 | **Output Layer / Task Prediction**  | `output`, `sentiment`, `fraud`                     | Modify final layer predictions or logits to implement task-specific backdoors.                 |
 
+---
+
 **Notes:**
 
 * Some backdoors (like `dynamic`) may affect multiple layers at runtime.
