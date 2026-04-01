@@ -24,7 +24,7 @@ The CAD framework currently implements **17 backdoors**, covering multiple model
 | Output-level               | `output`                                                                            |
 | Gradient-based             | `gradient`                                                                          |
 
-All backdoors can be activated individually or in full pipelines and subsequently **detected using dedicated modules**.
+All backdoors can be activated individually or in full pipelines and subsequently **detected using dedicated modules.
 
 ---
 
