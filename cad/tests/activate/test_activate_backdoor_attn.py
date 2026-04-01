@@ -31,11 +31,11 @@ def run():
         input_ids
     )
 
-    # 🔍 Step 1: Global sanity check
+    #  Step 1: Global sanity check
     max_change = torch.abs(perturbed_attention - attention_scores).max().item()
     print(f"[Activation][AttnBackdoor] Max attention change: {max_change:.4f}")
 
-    # 🔍 Step 2: Build trigger mask (position-level)
+    # Step 2: Build trigger mask (position-level)
     trigger_mask = (input_ids == trigger_token_id)  # [B, L]
 
     trigger_present = trigger_mask.any().item()
@@ -48,7 +48,7 @@ def run():
     attn_trigger_mask = trigger_mask.unsqueeze(1).unsqueeze(2)  # [B,1,1,L]
     attn_trigger_mask = attn_trigger_mask.expand(batch_size, num_heads, seq_len, seq_len)
 
-    # 🔍 Step 3: Localized validation
+    #  Step 3: Localized validation
     attn_diff = torch.abs(perturbed_attention - attention_scores)
 
     trigger_change = attn_diff[attn_trigger_mask].max().item()
