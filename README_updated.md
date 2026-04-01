@@ -151,11 +151,11 @@ pip install -r requirements.txt
 
 ---
 
-## Possible Next Steps / Future Work
+## Next Steps
 
-* Implement group/tag-based backdoor selection** for pipelines.
-* Add heuristic detection for non-activated backdoors.
-* Expand **dataset support and evaluation on full LLMs.
+* Analysis of activation/dection results and its relevance.
+* Final report compilation
+* Expand dataset support and evaluation on full LLMs.
 * Integrate automated reporting and logging for research experiments.
 
 ---
