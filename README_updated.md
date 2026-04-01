@@ -1,7 +1,7 @@
 # Architectural Backdoors in Transformer-Based Models: A Modular Framework for Activation, Detection, and Analysis
 ---
 
-This repository contains the CAD framework, a research toolkit for **activating, detecting, and analyzing backdoors in transformer-based models (like BERT)**. The framework is modular and supports layer-wise, token-level, and task-specific backdoors**, enabling controlled experiments for both research and security evaluation.
+This repository contains the CAD framework, a research toolkit for activating, detecting, and analyzing backdoors in transformer-based models (like BERT). The framework is modular and supports layer-wise, token-level, and task-specific backdoors**, enabling controlled experiments for both research and security evaluation.
 
 ---
 
