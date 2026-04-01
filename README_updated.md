@@ -108,7 +108,7 @@ python -m cad.tests.detect.detect_backdoor_pipeline --help
 
 ---
 
-## 🧩 Project Structure
+## Project Structure
 
 ```text
 cad/
@@ -122,7 +122,7 @@ cad/
 
 ---
 
-## ✅ Current Capabilities
+##  Current Capabilities
 
 * Full activation and detection pipelines for 17 backdoors.
 * Alias-based CLI for flexible selection of backdoors.
