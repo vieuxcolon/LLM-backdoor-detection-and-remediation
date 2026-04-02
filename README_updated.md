@@ -153,7 +153,7 @@ pip install -r requirements.txt
 
 ## Next Steps
 
-* Analysis of activation/dection results and its relevance.
+* Analysis of activation/detection results and its relevance.
 * Final report compilation
 * Expand dataset support and evaluation on full LLMs.
 * Integrate automated reporting and logging for research experiments.
