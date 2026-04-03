@@ -89,7 +89,7 @@ python -m cad.tests.activate.activate_backdoor_pipeline --help
 python -m cad.tests.detect.detect_backdoor_pipeline
 ```
 
-* **Run selected backdoors:**
+* **Run selected detection tests:**
 
 ```bash
 python -m cad.tests.detect.detect_backdoor_pipeline --backdoors attn contextual
