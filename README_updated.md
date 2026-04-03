@@ -55,21 +55,21 @@ The CAD framework backdoors are organized by the **BERT model components they ma
 
 ##  Activation Pipeline
 
-**Purpose:** Activate backdoors in a model and validate their effect.
+**Purpose:** Activate all given backdoors in a model and validate their effect.
 
-* **Run all backdoors:**
+* **Run all activation tests:**
 
 ```bash
 python -m cad.tests.activate.activate_backdoor_pipeline
 ```
 
-* **Run selected backdoors:**
+* **Run selected activation tests:**
 
 ```bash
 python -m cad.tests.activate.activate_backdoor_pipeline --backdoors attn contextual
 ```
 
-* **Help / aliases:**
+* **Get help / get backdoor aliases or alias names:**
 
 ```bash
 python -m cad.tests.activate.activate_backdoor_pipeline --help
@@ -81,7 +81,7 @@ python -m cad.tests.activate.activate_backdoor_pipeline --help
 
 ##  Detection Pipeline
 
-**Purpose:** Detect activated backdoors in a model.
+**Purpose:** Detect all activated backdoors in a model.
 
 * **Run all detection tests:**
 
