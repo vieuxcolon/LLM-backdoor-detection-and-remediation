@@ -1,4 +1,4 @@
-Here’s a clean, **GitHub-ready design document** that merges your insights and formalizes the architecture going forward.
+
 
 ---
 
